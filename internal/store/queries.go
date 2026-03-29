@@ -48,3 +48,11 @@ AND visible_at <= ?
 ORDER BY enqueued_at ASC
 LIMIT 1
 `
+
+const queryGetStats = `
+SELECT
+	COUNT(CASE WHEN is_dlq = 0 THEN 1 END) as message_count,
+	COUNT(CASE WHEN is_dlq = 1 THEN 1 END) as dlq_count
+	FROM messages
+	WHERE queue_name = ?
+`

@@ -61,24 +61,15 @@ func (s *SqliteStore) ListQueues(ctx context.Context) ([]*Queue, error) {
 	return queues, rows.Err()
 }
 
-func (s *SqliteStore) Enqueue(ctx context.Context, qName string, body []byte) error {
-	msg := &Message{
-		ID:            uuid.NewString(),
-		QueueName:     qName,
-		Body:          body,
-		EnqueuedAt:    time.Now(),
-		VisibleAt:     time.Now(),
-		DeliveryCount: 0,
-		IsDLQ:         false,
-	}
+func (s *SqliteStore) Enqueue(ctx context.Context, queueName string, body []byte) error {
 	_, err := s.db.ExecContext(ctx, queryEnqueue,
-		msg.ID,
-		msg.QueueName,
-		msg.Body,
-		msg.EnqueuedAt,
-		msg.VisibleAt,
-		msg.DeliveryCount,
-		msg.IsDLQ,
+		uuid.NewString(),
+		queueName,
+		body,
+		time.Now(), // EnqueuedAt
+		time.Now(), // VisibleAt
+		0,          // DeliveryCount
+		false,      // IsDLQ
 	)
 	if err != nil {
 		return err
@@ -100,4 +91,17 @@ func (s *SqliteStore) Peek(ctx context.Context, qName string) (*Message, error) 
 		return nil, err
 	}
 	return msg, nil
+}
+
+func (s *SqliteStore) GetStats(ctx context.Context, qName string) (*Stats, error) {
+	count := s.db.QueryRowContext(ctx, queryGetStats, qName)
+
+	stats := &Stats{
+		QueueName: qName,
+	}
+	err := count.Scan(&stats.MessageCount, &stats.DLQCount)
+	if err != nil {
+		return nil, err
+	}
+	return stats, nil
 }
