@@ -41,12 +41,12 @@ VALUES (?,?,?,?,?,?,?)
 
 const queryPeek = `
 SELECT id, queue_name, body, enqueued_at, visible_at, delivery_count, lock_token, locked_until, is_dlq
-FROM messages
-WHERE queue_name = ?
-AND is_dlq = 0
-AND visible_at <= ?
+	FROM messages
+	WHERE queue_name = ?
+	AND is_dlq = 0
+	AND visible_at <= ?
 ORDER BY enqueued_at ASC
-LIMIT 1
+	LIMIT 1
 `
 
 const queryGetStats = `
@@ -55,4 +55,47 @@ SELECT
 	COUNT(CASE WHEN is_dlq = 1 THEN 1 END) as dlq_count
 	FROM messages
 	WHERE queue_name = ?
+`
+
+const queryReceive = `
+SELECT id, queue_name, body, enqueued_at, visible_at, delivery_count, lock_token, locked_until, is_dlq
+	FROM messages
+	WHERE queue_name = ?
+	AND is_dlq = 0
+	AND visible_at <= ?
+	AND lock_token IS NULL
+ORDER BY enqueued_at ASC
+	LIMIT 1
+`
+
+const queryReceiveUpdate = `
+UPDATE messages
+SET lock_token = ?, locked_until = ?, delivery_count = delivery_count + 1
+	WHERE id = ?
+`
+
+const queryAck = `
+DELETE
+FROM messages
+WHERE lock_token = ?
+`
+
+const queryNackFind = `
+SELECT id, queue_name, body, enqueued_at, visible_at, delivery_count, lock_token, locked_until, is_dlq, q.max_delivery
+	FROM messages
+	JOIN queues q on q.name = messages.queue_name
+	WHERE lock_token = ?
+LIMIT 1
+`
+
+const queryNackDLQ = `
+UPDATE messages
+SET lock_token = NULL, locked_until = NULL, is_dlq = 1
+WHERE id = ?
+`
+
+const queryNackRetry = `
+UPDATE messages
+SET lock_token = NULL, locked_until = NULL, visible_at = ?
+WHERE id = ?
 `

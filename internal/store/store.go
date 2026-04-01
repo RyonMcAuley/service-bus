@@ -7,6 +7,8 @@ type MessageStore interface {
 	ListQueues(ctx context.Context) ([]*Queue, error)
 
 	Enqueue(ctx context.Context, queueName string, body []byte) error
+	Ack(ctx context.Context, lockToken string) error
+	Nack(ctx context.Context, lockToken string) error
 
 	GetStats(ctx context.Context, queueName string) (*Stats, error)
 

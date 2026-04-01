@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/google/uuid"
 	_ "modernc.org/sqlite"
 	"time"
@@ -104,4 +105,67 @@ func (s *SqliteStore) GetStats(ctx context.Context, qName string) (*Stats, error
 		return nil, err
 	}
 	return stats, nil
+}
+
+func (s *SqliteStore) Receive(ctx context.Context, qName string) (*Message, error) {
+	row := s.db.QueryRowContext(ctx, queryReceive, qName, time.Now())
+
+	msg := &Message{}
+
+	err := row.Scan(&msg.ID, &msg.QueueName, &msg.Body, &msg.EnqueuedAt, &msg.VisibleAt,
+		&msg.DeliveryCount, &msg.LockToken, &msg.LockedUntil, &msg.IsDLQ)
+	if err != nil {
+		fmt.Println("here")
+		return nil, err
+	}
+	token := uuid.NewString()
+
+	lockedUntil := time.Now().Add(30 * time.Second)
+	_, err = s.db.ExecContext(ctx, queryReceiveUpdate, token, lockedUntil, msg.ID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	msg.LockToken = &token
+	msg.LockedUntil = &lockedUntil
+
+	return msg, nil
+}
+
+func (s *SqliteStore) Ack(ctx context.Context, lockToken string) error {
+	_, err := s.db.ExecContext(ctx, queryAck, lockToken)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *SqliteStore) Nack(ctx context.Context, lockToken string) error {
+	row := s.db.QueryRowContext(ctx, queryNackFind, lockToken)
+
+	msg := Message{}
+	var maxDelivery int
+	err := row.Scan(&msg.ID, &msg.QueueName, &msg.Body, &msg.EnqueuedAt, &msg.VisibleAt,
+		&msg.DeliveryCount, &msg.LockToken, &msg.LockedUntil, &msg.IsDLQ, &maxDelivery)
+
+	if err != nil {
+		return err
+	}
+
+	// determine if -> DLQ or back on queue
+	if msg.DeliveryCount >= maxDelivery {
+		msg.IsDLQ = true
+		_, err = s.db.ExecContext(ctx, queryNackDLQ, msg.ID)
+		if err != nil {
+			return err
+		}
+	} else {
+		_, err = s.db.ExecContext(ctx, queryNackRetry, time.Now(), msg.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

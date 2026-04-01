@@ -18,6 +18,23 @@ func main() {
 	initData(store)
 	getStats(store)
 
+	msg, _ := store.Peek(context.Background(), "test-queue-2")
+
+	fmt.Println("Peek Message: " + string(msg.Body))
+
+	msg, err = store.Receive(context.Background(), "test-queue-2")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println("Receive Message: " + string(msg.Body))
+
+	err = store.Nack(context.Background(), *msg.LockToken)
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	store.Close()
 }
 
