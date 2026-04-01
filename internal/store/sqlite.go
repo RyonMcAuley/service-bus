@@ -108,20 +108,24 @@ func (s *SqliteStore) GetStats(ctx context.Context, qName string) (*Stats, error
 }
 
 func (s *SqliteStore) Receive(ctx context.Context, qName string) (*Message, error) {
-	row := s.db.QueryRowContext(ctx, queryReceive, qName, time.Now())
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	row := tx.QueryRowContext(ctx, queryReceive, qName, time.Now())
 
 	msg := &Message{}
 
-	err := row.Scan(&msg.ID, &msg.QueueName, &msg.Body, &msg.EnqueuedAt, &msg.VisibleAt,
+	err = row.Scan(&msg.ID, &msg.QueueName, &msg.Body, &msg.EnqueuedAt, &msg.VisibleAt,
 		&msg.DeliveryCount, &msg.LockToken, &msg.LockedUntil, &msg.IsDLQ)
 	if err != nil {
-		fmt.Println("here")
-		return nil, err
+		return nil, fmt.Errorf("scanning received message: %w", err)
 	}
 	token := uuid.NewString()
 
 	lockedUntil := time.Now().Add(30 * time.Second)
-	_, err = s.db.ExecContext(ctx, queryReceiveUpdate, token, lockedUntil, msg.ID)
+	_, err = tx.ExecContext(ctx, queryReceiveUpdate, token, lockedUntil, msg.ID)
 
 	if err != nil {
 		return nil, err
@@ -129,6 +133,10 @@ func (s *SqliteStore) Receive(ctx context.Context, qName string) (*Message, erro
 
 	msg.LockToken = &token
 	msg.LockedUntil = &lockedUntil
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 
 	return msg, nil
 }
