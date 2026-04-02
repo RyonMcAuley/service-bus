@@ -105,6 +105,70 @@ func TestAck(t *testing.T) {
 	}
 
 	if peeked != nil {
-		t.Fatalf("")
+		t.Fatalf("Expected queue to be empty after message Acknowledged")
+	}
+}
+
+func TestNack(t *testing.T) {
+	store := newTestStoreWithQueue(t)
+
+	ctx := context.Background()
+
+	store.Enqueue(ctx, queue, []byte(message))
+
+	msg, err := store.Receive(ctx, queue)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	err = store.Nack(ctx, *msg.LockToken)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	msg, err = store.Receive(ctx, queue)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	if msg.DeliveryCount < 1 {
+		t.Fatalf("Expected 1 delivery count, got %d", msg.DeliveryCount)
+	}
+}
+
+func TestNackDLQ(t *testing.T) {
+	store := newTestStoreWithQueue(t)
+
+	ctx := context.Background()
+
+	store.Enqueue(ctx, queue, []byte(message))
+
+	msg, err := store.Receive(ctx, queue)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	err = store.Nack(ctx, *msg.LockToken)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	msg, err = store.Receive(ctx, queue)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	err = store.Nack(ctx, *msg.LockToken)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	peeked, err := store.Peek(ctx, queue)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	if peeked != nil {
+		t.Fatalf("Expected Peek to return nil after message entered DLQ")
 	}
 }
