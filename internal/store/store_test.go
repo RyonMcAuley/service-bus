@@ -17,8 +17,17 @@ func newTestStore(t *testing.T) *SqliteStore {
 	return store
 }
 
-func TestEnqueueMessage(t *testing.T) {
+func newTestStoreWithQueue(t *testing.T) *SqliteStore {
 	store := newTestStore(t)
+
+	ctx := context.Background()
+	store.CreateQueue(ctx, queue, 2)
+
+	return store
+}
+
+func TestEnqueueMessage(t *testing.T) {
+	store := newTestStoreWithQueue(t)
 
 	store.Enqueue(context.Background(), queue, []byte(message))
 
@@ -29,5 +38,73 @@ func TestEnqueueMessage(t *testing.T) {
 
 	if string(msg.Body) != message {
 		t.Fatalf("Message peeked did not match queued")
+	}
+}
+
+func TestReceiveMessage(t *testing.T) {
+	store := newTestStoreWithQueue(t)
+
+	store.Enqueue(context.Background(), queue, []byte(message))
+
+	msg, err := store.Receive(context.Background(), queue)
+
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	if string(msg.Body) != message {
+		t.Fatalf("Message received did not match queued")
+	}
+}
+
+func TestPeekAfterReceive(t *testing.T) {
+	store := newTestStoreWithQueue(t)
+
+	ctx := context.Background()
+
+	store.Enqueue(ctx, queue, []byte("Shouldn't get"))
+	store.Enqueue(ctx, queue, []byte("Should get"))
+
+	_, err := store.Receive(context.Background(), queue)
+
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	peeked, err := store.Peek(ctx, queue)
+
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	if string(peeked.Body) != "Should get" {
+		t.Fatalf("Did not peek message past received")
+	}
+}
+
+func TestAck(t *testing.T) {
+	store := newTestStoreWithQueue(t)
+
+	ctx := context.Background()
+
+	store.Enqueue(ctx, queue, []byte(message))
+
+	msg, err := store.Receive(ctx, queue)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	err = store.Ack(ctx, *msg.LockToken)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	peeked, err := store.Peek(ctx, queue)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	if peeked != nil {
+		t.Fatalf("")
 	}
 }

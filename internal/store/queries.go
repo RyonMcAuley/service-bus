@@ -45,6 +45,7 @@ SELECT id, queue_name, body, enqueued_at, visible_at, delivery_count, lock_token
 	WHERE queue_name = ?
 	AND is_dlq = 0
 	AND visible_at <= ?
+	AND lock_token IS NULL
 ORDER BY enqueued_at ASC
 	LIMIT 1
 `

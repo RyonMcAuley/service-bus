@@ -21,6 +21,7 @@ func NewSqliteStore(path string) (*SqliteStore, error) {
 	db.SetMaxOpenConns(1)
 	db.Exec("PRAGMA journal_mode=WAL;")
 	db.Exec("PRAGMA busy_timeout=5000;")
+	db.Exec("PRAGMA foreign_keys = ON;")
 
 	s := &SqliteStore{db: db}
 
