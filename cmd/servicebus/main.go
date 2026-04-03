@@ -3,8 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
 
 	"github.com/RyonMcAuley/servicebus/internal/store"
+	"github.com/RyonMcAuley/servicebus/internal/transport"
 )
 
 func main() {
@@ -13,29 +16,32 @@ func main() {
 		fmt.Println("Error connecting to database")
 		panic(err)
 	}
+	defer store.Close()
 
-	initQueue(store)
-	initData(store)
-	getStats(store)
+	r := transport.NewRouter(store)
+	log.Fatal(http.ListenAndServe(":5800", r))
 
-	msg, _ := store.Peek(context.Background(), "test-queue-2")
+	// initQueue(store)
+	// initData(store)
+	// getStats(store)
+	//
+	// msg, _ := store.Peek(context.Background(), "test-queue-2")
+	//
+	// fmt.Println("Peek Message: " + string(msg.Body))
+	//
+	// msg, err = store.Receive(context.Background(), "test-queue-2")
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
+	//
+	// fmt.Println("Receive Message: " + string(msg.Body))
+	//
+	// err = store.Nack(context.Background(), *msg.LockToken)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
 
-	fmt.Println("Peek Message: " + string(msg.Body))
-
-	msg, err = store.Receive(context.Background(), "test-queue-2")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	fmt.Println("Receive Message: " + string(msg.Body))
-
-	err = store.Nack(context.Background(), *msg.LockToken)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	store.Close()
 }
 
 // Print stats for all q's
