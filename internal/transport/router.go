@@ -14,6 +14,7 @@ func NewRouter(s store.MessageStore) http.Handler {
 	h := handlers.NewHandler(s)
 
 	r.Post("/queues/{queue}", h.CreateQueue)
+	r.Get("/queues/{queue}", h.Peek)
 
 	r.Post("/message/{queue}", h.Enqueue)
 	r.Get("/message/{queue}", h.Receive)
