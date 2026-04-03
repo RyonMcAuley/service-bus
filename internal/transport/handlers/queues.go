@@ -19,8 +19,7 @@ func (h *Handler) CreateQueue(w http.ResponseWriter, r *http.Request) {
 	if maxDelivery != "" {
 		i, err := strconv.Atoi(maxDelivery)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("invalid maxDelivery"))
+			writeJSON(w, http.StatusBadRequest, "invalid maxDelivery")
 			return
 		} else {
 			deliveryInt = i
@@ -28,14 +27,11 @@ func (h *Handler) CreateQueue(w http.ResponseWriter, r *http.Request) {
 	}
 	err := h.store.CreateQueue(r.Context(), qName, deliveryInt)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("unable to create queue\n"))
-		w.Write([]byte(err.Error()))
+		writeJSON(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("queue created"))
+	writeJSON(w, http.StatusCreated, "queue created")
 }
 
 func (h *Handler) Enqueue(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +48,11 @@ func (h *Handler) Enqueue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.store.Enqueue(r.Context(), qName, []byte(body))
+	err := h.store.Enqueue(r.Context(), qName, []byte(body))
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	writeJSON(w, http.StatusCreated, "message queued")
 }
 
