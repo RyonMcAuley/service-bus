@@ -37,3 +37,22 @@ func (h *Handler) CreateQueue(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusCreated, "queue created")
 }
+
+func (h *Handler) Peek(w http.ResponseWriter, r *http.Request) {
+	qName := chi.URLParam(r, "queue")
+	if qName == "" {
+		writeJSON(w, http.StatusBadRequest, "queue name required")
+		return
+	}
+
+	msg, err := h.store.Peek(r.Context(), qName)
+	if err != nil {
+		writeJSON(w, http.StatusNoContent, "nothing to peek")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, MessageResponse{
+		ID:   msg.ID,
+		Body: string(msg.Body),
+	})
+}
