@@ -42,9 +42,18 @@ func (s *SqliteStore) CreateQueue(ctx context.Context, name string, maxDelivery 
 }
 
 func (s *SqliteStore) DeleteQueue(ctx context.Context, queueName string) error {
-	_, err := s.db.ExecContext(ctx, queryDeleteQueue, queueName)
+	tx, err := s.db.BeginTx(ctx, nil)
+	defer tx.Rollback()
+	_, err = tx.ExecContext(ctx, queryDeleteMessages, queueName)
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx, queryDeleteQueue, queueName)
+	if err != nil {
+		return err
+	}
 
-	return err
+	return tx.Commit()
 }
 
 func (s *SqliteStore) ListQueues(ctx context.Context) ([]*Queue, error) {

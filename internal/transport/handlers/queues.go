@@ -91,7 +91,23 @@ func (h *Handler) DeleteQueue(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, "queue name required")
 		return
 	}
-	err := h.store.DeleteQueue(r.Context(), queueName)
+	stats, err := h.store.GetStats(r.Context(), queueName)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, "error validating queue stats")
+		return
+	}
+
+	messagesInQueue := stats.ActiveMessages + stats.AvailableMessages
+
+	force := r.URL.Query().Get("force")
+
+	if messagesInQueue > 0 && force != "true" {
+		writeJSON(w, http.StatusConflict, "queue has messages, use ?force=true to delete")
+		return
+	}
+
+	err = h.store.DeleteQueue(r.Context(), queueName)
+	fmt.Println("should be deleted ?")
 	if err != nil {
 		fmt.Println(err)
 		writeJSON(w, http.StatusInternalServerError, "error deleting queue")

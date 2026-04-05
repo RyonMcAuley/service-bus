@@ -29,6 +29,11 @@ INSERT INTO queues (name, max_delivery, created_at)
 VALUES (?, ?, ?)
 `
 
+const queryDeleteMessages = `
+	DELETE FROM messages
+	WHERE queue_name = ?
+	`
+
 const queryDeleteQueue = `
 	DELETE FROM queues
 	WHERE name = ?
