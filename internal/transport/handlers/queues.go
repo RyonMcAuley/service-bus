@@ -107,7 +107,6 @@ func (h *Handler) DeleteQueue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = h.store.DeleteQueue(r.Context(), queueName)
-	fmt.Println("should be deleted ?")
 	if err != nil {
 		fmt.Println(err)
 		writeJSON(w, http.StatusInternalServerError, "error deleting queue")
