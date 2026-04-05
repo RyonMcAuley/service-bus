@@ -28,7 +28,7 @@ func (h *Handler) CreateQueue(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	err := h.store.CreateQueue(r.Context(), qName, deliveryInt)
-	if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+	if err != nil && strings.Contains(err.Error(), "UNIQUE constraint failed") {
 		writeJSON(w, http.StatusConflict, "queue already exists")
 		return
 	} else if err != nil {
