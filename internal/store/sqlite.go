@@ -41,6 +41,12 @@ func (s *SqliteStore) CreateQueue(ctx context.Context, name string, maxDelivery 
 	return err
 }
 
+func (s *SqliteStore) DeleteQueue(ctx context.Context, queueName string) error {
+	_, err := s.db.ExecContext(ctx, queryDeleteQueue, queueName)
+
+	return err
+}
+
 func (s *SqliteStore) ListQueues(ctx context.Context) ([]*Queue, error) {
 	rows, err := s.db.QueryContext(ctx, queryListQueues)
 

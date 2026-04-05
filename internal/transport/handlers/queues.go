@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -82,4 +83,20 @@ func (h *Handler) GetStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, result)
+}
+
+func (h *Handler) DeleteQueue(w http.ResponseWriter, r *http.Request) {
+	queueName := chi.URLParam(r, "queue")
+	if queueName == "" {
+		writeJSON(w, http.StatusBadRequest, "queue name required")
+		return
+	}
+	err := h.store.DeleteQueue(r.Context(), queueName)
+	if err != nil {
+		fmt.Println(err)
+		writeJSON(w, http.StatusInternalServerError, "error deleting queue")
+		return
+	}
+
+	writeJSON(w, http.StatusNoContent, "queue deleted")
 }
