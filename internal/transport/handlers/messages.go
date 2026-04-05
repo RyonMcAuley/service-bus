@@ -39,7 +39,7 @@ func (h *Handler) Receive(w http.ResponseWriter, r *http.Request) {
 
 	msg, err := h.store.Receive(r.Context(), qName)
 
-	if strings.Contains(err.Error(), "no rows in result set") {
+	if err != nil && strings.Contains(err.Error(), "no rows in result set") {
 		writeJSON(w, http.StatusNoContent, "nothing in queue")
 		return
 	} else if err != nil {
