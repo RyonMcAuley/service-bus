@@ -25,6 +25,13 @@ type MessageResponse struct {
 	LockToken string `json:"lockToken"`
 }
 
+type QueueResponse struct {
+	QueueName         string `json:"name"`
+	ActiveMessages    int    `json:"activeMessages"`
+	AvailableMessages int    `json:"availableMessages"`
+	DLQCount          int    `json:"dlqCount"`
+}
+
 func NewHandler(s store.MessageStore) Handler {
 	return Handler{store: s}
 }

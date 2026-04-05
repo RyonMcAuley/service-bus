@@ -56,3 +56,30 @@ func (h *Handler) Peek(w http.ResponseWriter, r *http.Request) {
 		Body: string(msg.Body),
 	})
 }
+
+func (h *Handler) GetStats(w http.ResponseWriter, r *http.Request) {
+	queues, err := h.store.ListQueues(r.Context())
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, "unable to retrieve queues")
+		return
+	}
+
+	result := []QueueResponse{}
+
+	for _, queue := range queues {
+		stats, err := h.store.GetStats(r.Context(), queue.Name)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, "unable to get stats")
+			return
+		}
+		// add stats to response
+		result = append(result, QueueResponse{
+			QueueName:         queue.Name,
+			ActiveMessages:    stats.DLQCount,
+			AvailableMessages: stats.MessageCount,
+			DLQCount:          stats.DLQCount,
+		})
+	}
+
+	writeJSON(w, http.StatusOK, result)
+}
