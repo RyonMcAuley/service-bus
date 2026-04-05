@@ -102,7 +102,7 @@ func (s *SqliteStore) Peek(ctx context.Context, qName string) (*Message, error) 
 }
 
 func (s *SqliteStore) GetStats(ctx context.Context, qName string) (*Stats, error) {
-	count := s.db.QueryRowContext(ctx, queryGetStats, qName, time.Now())
+	count := s.db.QueryRowContext(ctx, queryGetStats, time.Now(), qName)
 
 	stats := &Stats{
 		QueueName: qName,
