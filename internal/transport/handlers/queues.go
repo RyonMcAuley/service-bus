@@ -75,8 +75,8 @@ func (h *Handler) GetStats(w http.ResponseWriter, r *http.Request) {
 		// add stats to response
 		result = append(result, QueueResponse{
 			QueueName:         queue.Name,
-			ActiveMessages:    stats.DLQCount,
-			AvailableMessages: stats.MessageCount,
+			ActiveMessages:    stats.ActiveMessages,
+			AvailableMessages: stats.AvailableMessages,
 			DLQCount:          stats.DLQCount,
 		})
 	}

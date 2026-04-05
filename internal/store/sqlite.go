@@ -96,12 +96,12 @@ func (s *SqliteStore) Peek(ctx context.Context, qName string) (*Message, error) 
 }
 
 func (s *SqliteStore) GetStats(ctx context.Context, qName string) (*Stats, error) {
-	count := s.db.QueryRowContext(ctx, queryGetStats, qName)
+	count := s.db.QueryRowContext(ctx, queryGetStats, qName, time.Now())
 
 	stats := &Stats{
 		QueueName: qName,
 	}
-	err := count.Scan(&stats.MessageCount, &stats.DLQCount)
+	err := count.Scan(&stats.ActiveMessages, &stats.AvailableMessages, &stats.DLQCount)
 	if err != nil {
 		return nil, err
 	}

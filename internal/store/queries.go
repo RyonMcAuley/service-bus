@@ -52,6 +52,7 @@ ORDER BY enqueued_at ASC
 
 const queryGetStats = `
 SELECT
+	COUNT(CASE WHEN is_dlq = 0 AND lock_token IS NULL AND locked_until > ? THEN 1 END) as active_messages,
 	COUNT(CASE WHEN is_dlq = 0 THEN 1 END) as message_count,
 	COUNT(CASE WHEN is_dlq = 1 THEN 1 END) as dlq_count
 	FROM messages

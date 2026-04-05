@@ -39,7 +39,8 @@ func getStats(store *store.SqliteStore) {
 		}
 
 		fmt.Println("Queue: " + stats.QueueName)
-		fmt.Println("Active: ", stats.MessageCount)
+		fmt.Println("Active: ", stats.ActiveMessages)
+		fmt.Println("Available: ", stats.AvailableMessages)
 		fmt.Println("DLQ: ", stats.DLQCount)
 	}
 }

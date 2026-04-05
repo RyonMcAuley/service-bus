@@ -21,7 +21,8 @@ type Message struct {
 }
 
 type Stats struct {
-	QueueName    string
-	MessageCount int
-	DLQCount     int
+	QueueName         string
+	ActiveMessages    int
+	AvailableMessages int
+	DLQCount          int
 }
