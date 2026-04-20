@@ -13,6 +13,13 @@ type Client struct {
 	httpClient *http.Client
 }
 
+type Stats struct {
+	QueueName         string
+	ActiveMessages    int
+	AvailableMessages int
+	DLQCount          int
+}
+
 type Message struct {
 	ID        string
 	Body      []byte
@@ -103,4 +110,15 @@ func (c *Client) DeleteQueue(ctx context.Context, queueName string, force *strin
 	return err
 }
 
-// func (c *Client) GetStats(queryName string) ([]Stats, error) {}
+func (c *Client) GetStats(ctx context.Context) (*Stats, error) {
+	url := fmt.Sprintf("%s/stats", c.baseURL)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
+	resp, err := c.httpClient.Do(req)
+
+	stats := &Stats{}
+	err = json.NewDecoder(resp.Body).Decode(resp)
+	if err != nil {
+		return nil, err
+	}
+	return stats, err
+}
